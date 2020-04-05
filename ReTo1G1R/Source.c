@@ -12,16 +12,22 @@
 
 #define DEBUG 0
 #define log(fmt, ...) do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
+#define error(fmt, ...) do { printf(fmt, __VA_ARGS__); } while (0)
 
 int main(int argc, char** argv) {
 	char* input_filename;
 	if (argc >= 2) {
 		input_filename = argv[1];
 	} else {
-		input_filename = "..\\..\\wii.dat";
+		error("%s <dat file>\n", argv[0]);
+		exit(1);
 	}
 
 	xmlDocPtr document = xmlParseFile(input_filename);
+	if (!document) {
+		error("cannot open %s\n", input_filename);
+		exit(1);
+	}
 	xmlNodePtr root = xmlDocGetRootElement(document);
 
 	for (xmlNodePtr node = root->children; node != NULL; node = node->next) {
@@ -37,7 +43,7 @@ int main(int argc, char** argv) {
 			regex_t re;
 			regmatch_t match[2];
 
-			int status = regcomp(&re, "\\((\\w+)\\)", REG_EXTENDED);
+			int status = regcomp(&re, "\\((\\w+(, \\w+)*)\\)", REG_EXTENDED);
 			status = regexec(&re, name, 2, match, 0);
 			if (status == 0) {
 				int len = match[1].rm_eo - match[1].rm_so;
