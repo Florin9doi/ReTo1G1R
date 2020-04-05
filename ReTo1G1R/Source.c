@@ -14,6 +14,17 @@
 #define log(fmt, ...) do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
 #define error(fmt, ...) do { printf(fmt, __VA_ARGS__); } while (0)
 
+int insertRelease(xmlNodePtr node, char* name, char* region, char* language) {
+	xmlNodeAddContent(node, "\t");
+	xmlNodePtr release = xmlNewChild(node, NULL, "release", NULL);
+	xmlSetProp(release, "name", name);
+	xmlSetProp(release, "region", region);
+	if (language != NULL) {
+		xmlSetProp(release, "language", language);
+	}
+	xmlNodeAddContent(node, "\n\t");
+}
+
 int main(int argc, char** argv) {
 	char* input_filename;
 	if (argc >= 2) {
@@ -64,23 +75,12 @@ int main(int argc, char** argv) {
 				char* language = strtok(languages, ",");
 				while (language != NULL) {
 					log("=%s= ", language);
-
-					xmlNodeAddContent(node, "\t");
-					xmlNodePtr release = xmlNewChild(node, NULL, "release", NULL);
-					xmlSetProp(release, "name", name);
-					xmlSetProp(release, "region", region);
-					xmlSetProp(release, "language", language);
-					xmlNodeAddContent(node, "\n\t");
-
+					insertRelease(node, name, region, language);
 					language = strtok(NULL, ",");
 				}
 				log("\n");
 			} else {
-				xmlNodeAddContent(node, "\t");
-				xmlNodePtr release = xmlNewChild(node, NULL, "release", NULL);
-				xmlSetProp(release, "name", name);
-				xmlSetProp(release, "region", region);
-				xmlNodeAddContent(node, "\n\t");
+				insertRelease(node, name, region, NULL);
 			}
 			regfree(&re);
 		}
