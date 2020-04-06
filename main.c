@@ -14,6 +14,10 @@
 #define log(fmt, ...) do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0)
 #define error(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
 
+#define REGIONS "Asia|Australia|Austria|Belgium|Brazil|Canada|China|Croatia|Denmark|Europe|Finland"\
+	"|France|Germany|Greece|India|Italy|Japan|Korea|Latin America|Netherlands|Norway|Poland|Portugal"\
+	"|Russia|Scandinavia|Seven|South Africa|Spain|Sweden|Switzerland|UK|USA"
+
 int insertRelease(xmlNodePtr node, char* name, char* region, char* language) {
 	xmlNodeAddContent(node, "\t");
 	xmlNodePtr release = xmlNewChild(node, NULL, "release", NULL);
@@ -54,13 +58,17 @@ int main(int argc, char** argv) {
 			regex_t re;
 			regmatch_t match[2];
 
-			int status = regcomp(&re, "\\((\\w+(, \\w+)*)\\)", REG_EXTENDED);
+			//int status = regcomp(&re, "\\((\\w+(, \\w+)*)\\)", REG_EXTENDED);
+			int status = regcomp(&re, "\\((((, )?(" REGIONS "))+)\\)", REG_EXTENDED);
 			status = regexec(&re, name, 2, match, 0);
 			if (status == 0) {
 				int len = match[1].rm_eo - match[1].rm_so;
 				strncpy(region, name + match[1].rm_so, len);
 				region[len] = 0;
 				log("\t Region: %s\n", region);
+			} else {
+				error("error: cannot find language for <%s>\n", name);
+				exit(1);
 			}
 			regfree(&re);
 
