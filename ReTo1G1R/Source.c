@@ -11,8 +11,8 @@
 #pragma comment(lib, "regex")
 
 #define DEBUG 0
-#define log(fmt, ...) do { if (DEBUG) printf(fmt, __VA_ARGS__); } while (0)
-#define error(fmt, ...) do { printf(fmt, __VA_ARGS__); } while (0)
+#define log(fmt, ...) do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0)
+#define error(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
 
 int insertRelease(xmlNodePtr node, char* name, char* region, char* language) {
 	xmlNodeAddContent(node, "\t");
