@@ -110,7 +110,6 @@ int main(int argc, char** argv) {
 				title[len] = 0;
 				error("%s\n", title);
 			}
-			regfree(&re);
 
 			for (xmlNodePtr node2 = node->next; node2 != NULL; node2 = node2->next) {
 				if (strcmp(node2->name, "game") == 0) {
@@ -121,20 +120,19 @@ int main(int argc, char** argv) {
 					char* name2 = xmlGetProp(node2, "name");
 
 					char title2[255];
-					status = regcomp(&re, "(.*) \\(((, )?(" REGIONS "))+\\)", REG_EXTENDED);
 					status = regexec(&re, name2, 2, match, 0);
 					if (status == 0) {
 						int len = match[1].rm_eo - match[1].rm_so;
 						strncpy(title2, name2 + match[1].rm_so, len);
 						title2[len] = 0;
 					}
-					regfree(&re);
 
 					if (strcmp(title, title2) == 0) {
 						xmlSetProp(node2, "cloneof", name);
 					}
 				}
 			}
+			regfree(&re);
 		}
 	}
 
