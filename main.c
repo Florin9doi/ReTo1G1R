@@ -17,6 +17,9 @@
 #define REGIONS "Asia|Australia|Austria|Belgium|Brazil|Canada|China|Croatia|Denmark|Europe|Finland"\
 	"|France|Germany|Greece|India|Italy|Japan|Korea|Latin America|Netherlands|Norway|Poland|Portugal"\
 	"|Russia|Scandinavia|Seven|South Africa|Spain|Sweden|Switzerland|UK|USA"
+#define MATCH_NAME "(.*) \\(((, )?(" REGIONS "))+\\)"
+#define MATCH_REGION "\\((((, )?(" REGIONS "))+)\\)"
+#define MATCH_LANG "\\((\\w+(,\\w+)+)\\)"
 
 int insertRelease(xmlNodePtr node, char* name, char* region, char* language) {
 	xmlNodeAddContent(node, "\t");
@@ -43,72 +46,61 @@ int main(int argc, char** argv) {
 		error("cannot open %s\n", input_filename);
 		exit(1);
 	}
+
+	regex_t reg_name;
+	regex_t reg_region;
+	regex_t reg_lang;
+	int status = regcomp(&reg_name, MATCH_NAME, REG_EXTENDED);
+	status = regcomp(&reg_region, MATCH_REGION, REG_EXTENDED);
+	status = regcomp(&reg_lang, MATCH_LANG, REG_EXTENDED);
+	char title[255];
+	char region[100];
+	char languages[100];
+	char title2[255];
+
 	xmlNodePtr root = xmlDocGetRootElement(document);
-
 	for (xmlNodePtr node = root->children; node != NULL; node = node->next) {
-		log("game->name : <%s> %d\n", node->name, node->type);
-
 		if (strcmp(node->name, "game") == 0) {
-			char* name = xmlGetProp(node, "name");
-			char region[100];
-			char languages[100];
-
-			log("game->name : <%s>\n", name);
-
-			regex_t re;
 			regmatch_t match[2];
 
-			//int status = regcomp(&re, "\\((\\w+(, \\w+)*)\\)", REG_EXTENDED);
-			int status = regcomp(&re, "\\((((, )?(" REGIONS "))+)\\)", REG_EXTENDED);
-			status = regexec(&re, name, 2, match, 0);
+			char* name = xmlGetProp(node, "name");
+
+			status = regexec(&reg_region, name, 2, match, 0);
 			if (status == 0) {
 				int len = match[1].rm_eo - match[1].rm_so;
 				strncpy(region, name + match[1].rm_so, len);
 				region[len] = 0;
-				log("\t Region: %s\n", region);
 			} else {
 				error("error: cannot find language for <%s>\n", name);
 				exit(1);
 			}
-			regfree(&re);
 
-			status = regcomp(&re, "\\((\\w+(,\\w+)+)\\)", REG_EXTENDED);
-			status = regexec(&re, name, 2, match, 0);
+			status = regexec(&reg_lang, name, 2, match, 0);
 			if (status == 0) {
 				int len = match[1].rm_eo - match[1].rm_so;
 				strncpy(languages, name + match[1].rm_so, len);
 				languages[len] = 0;
-				log("\t Languages: ");
 
 				char* language = strtok(languages, ",");
 				while (language != NULL) {
-					log("=%s= ", language);
 					insertRelease(node, name, region, language);
 					language = strtok(NULL, ",");
 				}
-				log("\n");
 			} else {
 				insertRelease(node, name, region, NULL);
 			}
-			regfree(&re);
 
-			//////////////////////
-			//     CLONE OF     //
-			//////////////////////
 
 			char* cloneof = xmlGetProp(node, "cloneof");
 			if (cloneof != NULL) {
 				continue;
 			}
-
-			char title[255];
-			status = regcomp(&re, "(.*) \\(((, )?(" REGIONS "))+\\)", REG_EXTENDED);
-			status = regexec(&re, name, 2, match, 0);
+			status = regexec(&reg_name, name, 2, match, 0);
 			if (status == 0) {
 				int len = match[1].rm_eo - match[1].rm_so;
 				strncpy(title, name + match[1].rm_so, len);
 				title[len] = 0;
-				error("%s\n", title);
+				//error("%s\n", title);
 			}
 
 			for (xmlNodePtr node2 = node->next; node2 != NULL; node2 = node2->next) {
@@ -119,8 +111,7 @@ int main(int argc, char** argv) {
 					}
 					char* name2 = xmlGetProp(node2, "name");
 
-					char title2[255];
-					status = regexec(&re, name2, 2, match, 0);
+					status = regexec(&reg_name, name2, 2, match, 0);
 					if (status == 0) {
 						int len = match[1].rm_eo - match[1].rm_so;
 						strncpy(title2, name2 + match[1].rm_so, len);
@@ -132,7 +123,6 @@ int main(int argc, char** argv) {
 					}
 				}
 			}
-			regfree(&re);
 		}
 	}
 
@@ -141,6 +131,10 @@ int main(int argc, char** argv) {
 	char* output_filename = calloc(1, strlen(input_filename) + 10);
 	sprintf(output_filename, "%s_mod.dat", input_filename);
 	xmlSaveFile(output_filename, document);
-	xmlFreeDoc(document);
 	free(output_filename);
+
+	xmlFreeDoc(document);
+	regfree(&reg_name);
+	regfree(&reg_region);
+	regfree(&reg_lang);
 }
