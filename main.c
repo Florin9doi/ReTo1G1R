@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <time.h>
 
 #include <libxml/parser.h>
 #include <regex.h>
@@ -12,7 +13,7 @@
 
 #define DEBUG 0
 #define log(fmt, ...) do { if (DEBUG) printf(fmt, ##__VA_ARGS__); } while (0)
-#define error(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
+#define info(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
 
 #define REGIONS "Asia|Australia|Austria|Belgium|Brazil|Canada|China|Croatia|Denmark|Europe|Finland"\
 	"|France|Germany|Greece|India|Italy|Japan|Korea|Latin America|Netherlands|Norway|Poland|Portugal"\
@@ -20,6 +21,10 @@
 #define MATCH_NAME "(.*) \\(((, )?(" REGIONS "))+\\)"
 #define MATCH_REGION "\\((((, )?(" REGIONS "))+)\\)"
 #define MATCH_LANG "\\((\\w+(,\\w+)+)\\)"
+
+int processProgress(int position, int count) {
+	info("\r progress: %2d%%", position*100/count);
+}
 
 int insertRelease(xmlNodePtr node, char* name, char* region, char* language) {
 	xmlNodeAddContent(node, "\t");
@@ -40,10 +45,20 @@ int main(int argc, char** argv) {
 		error("%s <dat file>\n", argv[0]);
 		exit(1);
 	}
+	char* output_filename;
+	if (argc >= 3) {
+		output_filename = argv[2];
+	} else {
+		output_filename = calloc(1, strlen(input_filename) + 10);
+		sprintf(output_filename, "%s_mod.dat", input_filename);
+	}
+
+	time_t time_start, time_end;
+	time(&time_start);
 
 	xmlDocPtr document = xmlParseFile(input_filename);
 	if (!document) {
-		error("cannot open %s\n", input_filename);
+		info("cannot open %s\n", input_filename);
 		exit(1);
 	}
 
@@ -57,10 +72,14 @@ int main(int argc, char** argv) {
 	char region[100];
 	char languages[100];
 	char title2[255];
+	int progress_position = 0, progress_count = 0;
 
 	xmlNodePtr root = xmlDocGetRootElement(document);
+	progress_count = xmlChildElementCount(root);
 	for (xmlNodePtr node = root->children; node != NULL; node = node->next) {
 		if (strcmp(node->name, "game") == 0) {
+			processProgress(progress_position++, progress_count);
+
 			regmatch_t match[2];
 
 			char* name = xmlGetProp(node, "name");
@@ -71,7 +90,7 @@ int main(int argc, char** argv) {
 				strncpy(region, name + match[1].rm_so, len);
 				region[len] = 0;
 			} else {
-				error("error: cannot find language for <%s>\n", name);
+				info("error: cannot find language for <%s>\n", name);
 				exit(1);
 			}
 
@@ -128,13 +147,14 @@ int main(int argc, char** argv) {
 
 //	xmlDocDump(stdout, document);
 
-	char* output_filename = calloc(1, strlen(input_filename) + 10);
-	sprintf(output_filename, "%s_mod.dat", input_filename);
 	xmlSaveFile(output_filename, document);
-	free(output_filename);
 
 	xmlFreeDoc(document);
 	regfree(&reg_name);
 	regfree(&reg_region);
 	regfree(&reg_lang);
+
+	time(&time_end);
+	double time_diff = difftime(time_end, time_start);
+	printf("\r done in %.0fs   \n", time_diff);
 }
