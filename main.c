@@ -67,7 +67,6 @@ int main(int argc, char** argv) {
 	regex_t reg_title, reg_region, reg_lang;
 	regmatch_t match[2];
 	char str_buffer[255];
-	char title2[255];
 	int progress_position = 0, progress_count = 0;
 
 	status = regcomp(&reg_title, MATCH_TITLE, REG_EXTENDED);
@@ -127,18 +126,32 @@ int main(int argc, char** argv) {
 
 		char* name = xmlGetProp(node, "name");
 		char* title = xmlGetProp(node, "x_title");
-		char* region = xmlGetProp(node, "x_region");
+		char* regions = xmlGetProp(node, "x_region");
 		char* languages = xmlGetProp(node, "x_lang");
 
-		if (languages != NULL) {
-			char* language = strtok(languages, ",");
-			while (language != NULL) {
-				insertRelease(node, name, region, language);
-				language = strtok(NULL, ",");
+		char* r = calloc(1, strlen(regions) + 3);
+		memcpy(r, regions, strlen(regions));
+		char* region = strtok(r, ",");
+		while (region != NULL) {
+			if (languages != NULL) {
+				char* l = calloc(1, strlen(languages) + 2);
+				memcpy(l, languages, strlen(languages));
+				char* language = strtok(l, ",");
+				while (language != NULL) {
+					insertRelease(node, name, region, language);
+					language = strtok(language + strlen(language) + 1, ",");
+				}
+				free(l);
+			} else {
+				insertRelease(node, name, region, NULL);
 			}
-		} else {
-			insertRelease(node, name, region, NULL);
+			// We can't use space as separator because the region may contain spaces.
+			// Eg: South Africa, Latin America
+			// We know that the regions are separated my a comma and a space, so we can search for
+			// a comma and skip the next character (+ 2)
+			region = strtok(region + strlen(region) + 2, ",");
 		}
+		free(r);
 
 		char* cloneof = xmlGetProp(node, "cloneof");
 		if (cloneof == NULL) {
