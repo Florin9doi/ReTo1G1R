@@ -17,7 +17,7 @@
 
 #define REGIONS "Asia|Australia|Austria|Belgium|Brazil|Canada|China|Croatia|Denmark|Europe|Finland"\
 	"|France|Germany|Greece|India|Italy|Japan|Korea|Latin America|Netherlands|Norway|Poland|Portugal"\
-	"|Russia|Scandinavia|Seven|South Africa|Spain|Sweden|Switzerland|UK|USA"
+	"|Russia|Scandinavia|Seven|South Africa|Spain|Sweden|Switzerland|Taiwan|Turkey|UK|USA|World"
 #define MATCH_NAME "(.*) \\(((, )?(" REGIONS "))+\\)"
 #define MATCH_REGION "\\((((, )?(" REGIONS "))+)\\)"
 #define MATCH_LANG "\\((\\w+(,\\w+)+)\\)"
